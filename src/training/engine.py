@@ -153,6 +153,8 @@ def fit(
     optimizer,
     device,
     epochs,
+    checkpoint_path=None,
+
 ):
     """Train and validate a model for multiple epochs.
 
@@ -162,6 +164,7 @@ def fit(
 
     # This will store the results from every epoch
     history = []
+    best_val_accuracy = -1.0
 
     # Repeat training for the requested number of epochs
     for epoch in range(epochs):
@@ -200,6 +203,25 @@ def fit(
         }
 
         history.append(epoch_results)
+                # Save checkpoint if this is the best validation accuracy
+        if (
+            checkpoint_path is not None
+            and val_accuracy > best_val_accuracy
+        ):
+            best_val_accuracy = val_accuracy
+
+            save_checkpoint(
+                path=checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                epoch=epoch + 1,
+                metrics=epoch_results,
+            )
+
+            print(
+                f"Best checkpoint saved! "
+                f"Validation accuracy: {val_accuracy:.2f}%"
+            )
 
         # Print results
         print(
