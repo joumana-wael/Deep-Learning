@@ -26,3 +26,35 @@ def save_checkpoint(
 
     # Save everything into one file
     torch.save(checkpoint, path)
+
+
+def load_checkpoint(
+    path,
+    model,
+    optimizer,
+    device,
+):
+    """Load a saved training checkpoint.
+
+    Returns:
+        The saved epoch and metrics.
+    """
+
+    # Load the checkpoint file
+    checkpoint = torch.load(
+        path,
+        map_location=device,
+    )
+
+    # Restore the model's learned weights
+    model.load_state_dict(
+        checkpoint["model_state_dict"]
+    )
+
+    # Restore the optimizer's state
+    optimizer.load_state_dict(
+        checkpoint["optimizer_state_dict"]
+    )
+
+    # Return information about where training stopped
+    return checkpoint["epoch"], checkpoint["metrics"]
