@@ -1,10 +1,16 @@
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+from pathlib import Path
+
+
+
 
 from src.data.loaders import create_classification_loaders
 from src.models.scratch_cnn import ScratchCNN
 from src.training.engine import fit
+from src.training.checkpoint import save_checkpoint
+
 
 
 def main():
@@ -40,7 +46,9 @@ def main():
         model.parameters(),
         lr=0.001,
     )
-
+    checkpoint_path = Path(
+    "outputs/test_best_model.pth"
+)
     # Train for multiple epochs
     history = fit(
         model=model,
@@ -50,8 +58,11 @@ def main():
         optimizer=optimizer,
         device=device,
         epochs=3,
+        checkpoint_path=checkpoint_path,
     )
+    assert checkpoint_path.exists()
 
+    print("\nBest checkpoint exists:", checkpoint_path)
     print("\nTraining history:")
 
     for epoch_results in history:
