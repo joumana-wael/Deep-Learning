@@ -4,9 +4,7 @@ from torch.optim import Adam
 
 from src.data.loaders import create_classification_loaders
 from src.models.scratch_cnn import ScratchCNN
-from src.training.engine import train_one_epoch, validate
-
-
+from src.training.engine import fit
 def main():
     # Choose GPU if available
     device = torch.device(
@@ -40,16 +38,20 @@ def main():
         lr=0.001,
     )
 
-    # Train for ONE epoch only
-    print("\nTraining...")
+    # Train and validate for multiple epochs
+history = fit(
+    model=model,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    criterion=criterion,
+    optimizer=optimizer,
+    device=device,
+    epochs=3,
+)
+print("\nTraining history:")
 
-    train_loss, train_accuracy = train_one_epoch(
-        model=model,
-        train_loader=train_loader,
-        criterion=criterion,
-        optimizer=optimizer,
-        device=device,
-    )
+for epoch_results in history:
+    print(epoch_results)
 
     # Validate
     print("Validating...")

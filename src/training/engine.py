@@ -142,3 +142,74 @@ def validate(
     )
 
     return val_loss, val_accuracy
+
+
+
+def fit(
+    model,
+    train_loader,
+    val_loader,
+    criterion,
+    optimizer,
+    device,
+    epochs,
+):
+    """Train and validate a model for multiple epochs.
+
+    Returns:
+        A list containing the metrics from every epoch.
+    """
+
+    # This will store the results from every epoch
+    history = []
+
+    # Repeat training for the requested number of epochs
+    for epoch in range(epochs):
+
+        print(f"\nEpoch {epoch + 1}/{epochs}")
+        print("-" * 40)
+
+        # ------------------------------
+        # Training
+        # ------------------------------
+        train_loss, train_accuracy = train_one_epoch(
+            model=model,
+            train_loader=train_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device,
+        )
+
+        # ------------------------------
+        # Validation
+        # ------------------------------
+        val_loss, val_accuracy = validate(
+            model=model,
+            val_loader=val_loader,
+            criterion=criterion,
+            device=device,
+        )
+
+        # Store this epoch's results
+        epoch_results = {
+            "epoch": epoch + 1,
+            "train_loss": train_loss,
+            "train_accuracy": train_accuracy,
+            "val_loss": val_loss,
+            "val_accuracy": val_accuracy,
+        }
+
+        history.append(epoch_results)
+
+        # Print results
+        print(
+            f"Train Loss: {train_loss:.4f} | "
+            f"Train Accuracy: {train_accuracy:.2f}%"
+        )
+
+        print(
+            f"Val Loss: {val_loss:.4f} | "
+            f"Val Accuracy: {val_accuracy:.2f}%"
+        )
+
+    return history
