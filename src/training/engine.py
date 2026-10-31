@@ -154,7 +154,7 @@ def fit(
     device,
     epochs,
     checkpoint_path=None,
-
+    scheduler=None,
 ):
     """Train and validate a model for multiple epochs.
 
@@ -192,15 +192,19 @@ def fit(
             criterion=criterion,
             device=device,
         )
+                # Update the learning rate if a scheduler was provided
+        if scheduler is not None:
+            scheduler.step(val_loss)
 
         # Store this epoch's results
         epoch_results = {
-            "epoch": epoch + 1,
-            "train_loss": train_loss,
-            "train_accuracy": train_accuracy,
-            "val_loss": val_loss,
-            "val_accuracy": val_accuracy,
-        }
+    "epoch": epoch + 1,
+    "learning_rate": optimizer.param_groups[0]["lr"],
+    "train_loss": train_loss,
+    "train_accuracy": train_accuracy,
+    "val_loss": val_loss,
+    "val_accuracy": val_accuracy,
+}
 
         history.append(epoch_results)
                 # Save checkpoint if this is the best validation accuracy

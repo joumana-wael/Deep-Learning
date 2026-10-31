@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pathlib import Path
 
 
@@ -46,20 +47,27 @@ def main():
         model.parameters(),
         lr=0.001,
     )
+    scheduler = ReduceLROnPlateau(
+    optimizer,
+    mode="min",
+    factor=0.5,
+    patience=1,
+)
     checkpoint_path = Path(
     "outputs/test_best_model.pth"
 )
     # Train for multiple epochs
     history = fit(
-        model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        criterion=criterion,
-        optimizer=optimizer,
-        device=device,
-        epochs=3,
-        checkpoint_path=checkpoint_path,
-    )
+    model=model,
+    train_loader=train_loader,
+    val_loader=val_loader,
+    criterion=criterion,
+    optimizer=optimizer,
+    device=device,
+    epochs=3,
+    checkpoint_path=checkpoint_path,
+    scheduler=scheduler,
+)
     assert checkpoint_path.exists()
 
     print("\nBest checkpoint exists:", checkpoint_path)
