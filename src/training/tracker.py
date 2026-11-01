@@ -41,3 +41,19 @@ def log_artifact(path):
 
     if path.exists():
         mlflow.log_artifact(str(path))
+
+        def start_run(run_name=None):
+            """
+    Start an MLflow experiment run.
+    """
+
+    return mlflow.start_run(run_name=run_name)
+
+
+def end_run():
+    """
+    End the currently active MLflow run.
+    """
+
+    if mlflow.active_run() is not None:
+        mlflow.end_run()
