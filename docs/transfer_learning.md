@@ -97,12 +97,69 @@ uses its own normalization, so the comparison is fair.
 
 ## Results
 
-_Fill in after running on GPU. Paste `outputs/comparison/comparison_table.md` here._
+Trained on a Google Colab T4 GPU with `notebooks/transfer_learning_colab.ipynb`
+(ResNet-50, 15 epochs, seed 42). Every model was evaluated on the same
+validation split (1,200 images) by `compare_models`.
 
-Points for the analysis:
-- The gap between frozen and fine-tuned shows how far ImageNet features are
-  from fine-grained bird species.
-- The gap between scratch and transfer shows what pretraining adds when there
-  are only about 24 training images per class.
-- Compare the `generalization_gap` (train − val accuracy) column for each model
-  to discuss overfitting.
+| Model | Trainable params | Top-1 acc | Top-5 acc | Macro F1 | Train acc at best epoch | Gap (train − val) | Best epoch | Training time |
+|---|---|---|---|---|---|---|---|---|
+| ScratchCNN (baseline) | 440,776 | 9.42% | 26.25% | 7.76% | 10.91% | 1.49 | 19 / 20 | — |
+| ResNet-50 frozen | 409,800 | 58.25% | 85.75% | 57.12% | 92.70% | 34.45 | 14 / 15 | 8.4 min |
+| ResNet-50 partial | 15,374,536 | 72.25% | 92.00% | 71.37% | 100.00% | 27.75 | 15 / 15 | 8.9 min |
+| **ResNet-50 finetune** | 23,917,832 | **74.33%** | **92.50%** | **73.98%** | 100.00% | 25.67 | 14 / 15 | 15.7 min |
+
+Plots: `outputs/comparison/best_accuracy.png`, `accuracy_curves.png`,
+`loss_curves.png`. The per-epoch history of each run is in
+`outputs/transfer_resnet50_*/training_history.csv`. Trained checkpoints
+(`best_model.pth`, about 95 MB each) are on the team Google Drive in
+`Deep-Learning-transfer/`, not in git.
+
+### Analysis
+
+- **Pretraining is the biggest factor.** With only about 24 training images per
+  class, the scratch CNN reaches 9.42%, while even the frozen ResNet-50 reaches
+  58.25%. Both have about the same number of *trainable* parameters (0.44 M vs
+  0.41 M). The difference comes from the 23.5 M frozen ImageNet weights, which
+  already encode edges, textures and object parts that the scratch model cannot
+  learn from so little data.
+- **Adapting the backbone matters for fine-grained classes.** Training `layer4`
+  adds 14 points (58.25% → 72.25%). ImageNet's top-level features are tuned to
+  ImageNet's 1,000 classes, and bird species differ in small details (wing bars,
+  eye rings, bill shape) that these features do not separate well.
+- **Full fine-tuning adds only a little more** (72.25% → 74.33%), but it takes
+  about twice as long. Most of the useful adaptation happens in the last stage;
+  early layers (edges, colours) transfer almost unchanged.
+- **Top-5 accuracy is above 92%** for partial and finetune: when the model is
+  wrong, the true species is usually among its top guesses. These errors are
+  mostly confusions between visually similar species.
+- **Macro F1 is close to top-1 accuracy** for every model. Performance is spread
+  evenly across species and is not driven by a few easy classes. CUB-200 has
+  about the same number of images in every class, so accuracy and macro F1
+  are expected to agree.
+- **Overfitting.** Partial and finetune reach 100% training accuracy within a
+  few epochs, while validation accuracy plateaus around 72–74% (gap of about
+  26–28 points). The frozen model overfits too (34-point gap): its 2,048
+  features are enough to memorize about 5,400 images with a linear head.
+  For partial and finetune, validation loss stops improving after about epoch 3
+  (around 1.15–1.20) while training accuracy goes to 100%. `ReduceLROnPlateau`
+  then halved the learning rate two or three times, which added only small
+  gains (finetune: 68.7% at epoch 3 → 74.3% at epoch 14). The frozen model's
+  validation loss kept falling until the end, so it may gain a little from more
+  epochs. Stronger regularization would help (see below).
+- **Fine-tuning learns fast.** It reaches 50.8% validation accuracy after one
+  epoch, compared with 9.42% for the scratch model after 20 epochs.
+
+### Final choice
+
+The **fine-tuned ResNet-50** (74.33% top-1, 73.98% macro F1) is the best Task 1
+classifier and the recommended encoder for the colorization and captioning tasks.
+
+### Limitations and next steps
+
+- Augmentation is only a horizontal flip, the same as for the scratch model so
+  that the comparison stays fair. Random resized crops and colour jitter should
+  reduce the train/validation gap.
+- Training ran for 15 epochs at 224×224. Published CUB results with ResNet-50
+  (about 80–85%) usually use 448×448 inputs and longer schedules.
+- Learning rates were not tuned for the transfer model; the tuning grid (Member
+  4) could be reused with `head_lr`, `backbone_lr` and `strategy`.
