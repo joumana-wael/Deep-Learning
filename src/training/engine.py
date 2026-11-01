@@ -1,4 +1,9 @@
 import torch
+from src.training.tracker import (
+    log_metrics,
+    log_parameters,
+    log_artifact,
+)
 
 from src.training.checkpoint import save_checkpoint
 def train_one_epoch(
@@ -166,6 +171,14 @@ def fit(
     history = []
     best_val_accuracy = -1.0
 
+    log_parameters({
+    "epochs": epochs,
+    "learning_rate": optimizer.param_groups[0]["lr"],
+    "batch_size": train_loader.batch_size,
+    "optimizer": optimizer.__class__.__name__,
+    "loss_function": criterion.__class__.__name__,
+})
+
     # Repeat training for the requested number of epochs
     for epoch in range(epochs):
 
@@ -182,6 +195,7 @@ def fit(
             optimizer=optimizer,
             device=device,
         )
+        
 
         # ------------------------------
         # Validation
@@ -192,22 +206,39 @@ def fit(
             criterion=criterion,
             device=device,
         )
-                # Update the learning rate if a scheduler was provided
+        
+                             # Update the learning rate if a scheduler was provided
         if scheduler is not None:
             scheduler.step(val_loss)
 
+        # Get the current learning rate
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        # Log metrics to MLflow
+        log_metrics(
+            {
+                "train_loss": train_loss,
+                "train_accuracy": train_accuracy,
+                "val_loss": val_loss,
+                "val_accuracy": val_accuracy,
+                "learning_rate": current_lr,
+            },
+            step=epoch,
+        )
+
         # Store this epoch's results
         epoch_results = {
-    "epoch": epoch + 1,
-    "learning_rate": optimizer.param_groups[0]["lr"],
-    "train_loss": train_loss,
-    "train_accuracy": train_accuracy,
-    "val_loss": val_loss,
-    "val_accuracy": val_accuracy,
-}
+            "epoch": epoch + 1,
+            "learning_rate": current_lr,
+            "train_loss": train_loss,
+            "train_accuracy": train_accuracy,
+            "val_loss": val_loss,
+            "val_accuracy": val_accuracy,
+        }
 
         history.append(epoch_results)
-                # Save checkpoint if this is the best validation accuracy
+
+        # Save checkpoint if this is the best validation accuracy
         if (
             checkpoint_path is not None
             and val_accuracy > best_val_accuracy
@@ -237,5 +268,9 @@ def fit(
             f"Val Loss: {val_loss:.4f} | "
             f"Val Accuracy: {val_accuracy:.2f}%"
         )
+
+    # Log the best checkpoint to MLflow
+    if checkpoint_path is not None:
+        log_artifact(checkpoint_path)
 
     return history

@@ -12,6 +12,13 @@ from src.data.loaders import create_classification_loaders
 from src.models.scratch_cnn import ScratchCNN
 from src.training.engine import fit
 from src.training.logger import save_training_history
+from src.training.tracker import (
+    setup_mlflow,
+    start_run,
+    end_run,
+    log_artifact,
+)
+
 
 
 def main():
@@ -114,7 +121,17 @@ def main():
 
     checkpoint_path = output_dir / "best_model.pth"
     history_path = output_dir / "training_history.csv"
+       
+    # Set up MLflow experiment tracking
+    setup_mlflow(
+        experiment_name="bird_classification"
+    )
 
+    # Start an MLflow run
+    start_run(
+        run_name="classification_training"
+    )
+    
     # Train
     history = fit(
         model=model,
@@ -133,7 +150,8 @@ def main():
         history=history,
         output_path=history_path,
     )
-
+    log_artifact(history_path)
+    end_run()
     print("\nTraining completed!")
     print("Best checkpoint:", checkpoint_path)
     print("Training history:", history_path)
