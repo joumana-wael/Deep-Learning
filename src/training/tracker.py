@@ -5,7 +5,7 @@ import mlflow
 
 def setup_mlflow(
     experiment_name="bird_classification",
-    tracking_uri="mlruns",
+    tracking_uri="sqlite:///mlflow.db",
 ):
     """
     Configure MLflow tracking for the project.
