@@ -13,6 +13,16 @@ from src.data.loaders import create_classification_loaders
 from src.models.scratch_cnn import ScratchCNN
 from src.training.engine import fit
 from src.training.logger import save_training_history
+from src.training.tracker import (
+    setup_mlflow,
+    start_run,
+    end_run,
+    log_parameters,
+    log_metrics,
+    log_artifact,
+)
+
+
 
 
 def run_trial(
@@ -44,7 +54,21 @@ def run_trial(
     print(f"TRIAL {trial_number}")
     print("=" * 50)
     print("Configuration:", config)
+    
+     # Start an MLflow run for this tuning trial
+    start_run(
+        run_name=f"tuning_trial_{trial_number}"
+    )
 
+    start_time = time.perf_counter()
+
+    # Log the trial configuration
+    log_parameters({
+        **config,
+        "epochs": epochs,
+        "trial_number": trial_number,
+        "seed": trial_seed,
+    })
     start_time = time.perf_counter()
 
     train_loader, val_loader, class_names = (
@@ -90,10 +114,15 @@ def run_trial(
         scheduler=scheduler,
     )
 
+    history_path = trial_dir / "training_history.csv"
+
     save_training_history(
         history=history,
-        output_path=trial_dir / "training_history.csv",
+        output_path=history_path,
     )
+
+    # Log the training history as an MLflow artifact
+    log_artifact(history_path)
 
     elapsed_time = time.perf_counter() - start_time
 
@@ -112,7 +141,18 @@ def run_trial(
         "best_val_loss": best_epoch_result["val_loss"],
         "elapsed_seconds": elapsed_time,
     }
+    # Log final trial summary metrics
+    log_metrics(
+        {
+            "best_val_accuracy": result["best_val_accuracy"],
+            "best_val_loss": result["best_val_loss"],
+            "elapsed_seconds": result["elapsed_seconds"],
+        },
+        step=result["best_epoch"],
+    )
 
+    # Finish this MLflow trial
+    end_run()
     print(
         f"\nTrial {trial_number} completed!"
     )
