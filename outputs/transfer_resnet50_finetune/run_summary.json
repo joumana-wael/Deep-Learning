@@ -1,0 +1,28 @@
+{
+  "run_name": "transfer_resnet50_finetune",
+  "backbone": "resnet50",
+  "strategy": "finetune",
+  "pretrained": true,
+  "trainable_params": 23917832,
+  "total_params": 23917832,
+  "best_epoch": 14,
+  "best_val_accuracy": 74.33333333333333,
+  "best_val_loss": 1.1520107316970825,
+  "elapsed_seconds": 944.0587068550001,
+  "settings": {
+    "backbone": "resnet50",
+    "strategy": "finetune",
+    "pretrained": true,
+    "epochs": 15,
+    "batch_size": 32,
+    "head_lr": 0.001,
+    "backbone_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "dropout": 0.4,
+    "label_smoothing": 0.0,
+    "seed": 42,
+    "num_workers": 2,
+    "output_dir": "outputs/transfer_resnet50_finetune",
+    "run_name": "transfer_resnet50_finetune"
+  }
+}
