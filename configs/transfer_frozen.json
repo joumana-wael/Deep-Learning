@@ -1,0 +1,13 @@
+{
+  "backbone": "resnet50",
+  "strategy": "frozen",
+  "epochs": 15,
+  "batch_size": 32,
+  "head_lr": 0.001,
+  "backbone_lr": 0.0,
+  "weight_decay": 0.0001,
+  "dropout": 0.4,
+  "seed": 42,
+  "output_dir": "outputs/transfer_resnet50_frozen",
+  "run_name": "transfer_resnet50_frozen"
+}
