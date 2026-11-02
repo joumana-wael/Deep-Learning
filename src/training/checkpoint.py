@@ -9,22 +9,26 @@ def save_checkpoint(
     optimizer,
     epoch,
     metrics,
+    scheduler=None,
+    best_val_accuracy=-1.0,
+    history=None,
 ):
-    """Save the current training state."""
-
-    # Make sure the output folder exists
+    """Save the complete training state."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Collect everything we want to save
     checkpoint = {
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
+        "scheduler_state_dict": (
+            scheduler.state_dict() if scheduler is not None else None
+        ),
         "epoch": epoch,
         "metrics": metrics,
+        "best_val_accuracy": best_val_accuracy,
+        "history": history or [],
     }
 
-    # Save everything into one file
     torch.save(checkpoint, path)
 
 
@@ -33,28 +37,25 @@ def load_checkpoint(
     model,
     optimizer,
     device,
+    scheduler=None,
+    return_state=False,
 ):
-    """Load a saved training checkpoint.
-
-    Returns:
-        The saved epoch and metrics.
-    """
-
-    # Load the checkpoint file
+    """Restore model, optimizer, and optional scheduler state."""
     checkpoint = torch.load(
         path,
         map_location=device,
+        weights_only=False,
     )
 
-    # Restore the model's learned weights
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-    # Restore the optimizer's state
-    optimizer.load_state_dict(
-        checkpoint["optimizer_state_dict"]
-    )
+    scheduler_state = checkpoint.get("scheduler_state_dict")
+    if scheduler is not None and scheduler_state is not None:
+        scheduler.load_state_dict(scheduler_state)
 
-    # Return information about where training stopped
-    return checkpoint["epoch"], checkpoint["metrics"]
+    if return_state:
+        return checkpoint
+
+    # Preserve compatibility with the original function.
+    return checkpoint["epoch"], checkpoint["metrics"] 
