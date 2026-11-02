@@ -6,4 +6,8 @@ __pycache__/
 *.py[cod]
 
 # Notebook checkpoints
-.ipynb_checkpoints/
+.ipynb_checkpoints/# MLflow tracking data
+mlflow.db
+mlruns/
+# Generated model checkpoints
+outputs/**/*.pth
