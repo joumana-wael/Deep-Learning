@@ -6,6 +6,26 @@ __pycache__/
 *.py[cod]
 
 # Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local data and temporary test files
+data/
+test_bird.png
+
+# Model checkpoints
+*.pth
+*.pt
+outputs/**/*.pth
+
+# Environment and secrets
+.env
+
+# MLflow tracking data
+mlruns/
+mlflow.db
+
+# Test and tooling caches
+.pytest_cache/
 .ipynb_checkpoints/# MLflow tracking data
 mlflow.db
 mlruns/
