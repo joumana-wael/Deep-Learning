@@ -7,3 +7,20 @@ __pycache__/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
+# Local data and temporary test files
+data/
+test_bird.png
+
+# Model checkpoints
+*.pth
+*.pt
+
+# Environment and secrets
+.env
+
+# MLflow local tracking
+mlruns/
+mlflow.db
+
+# Test and tooling caches
+.pytest_cache/
