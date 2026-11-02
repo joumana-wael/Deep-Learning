@@ -7,6 +7,7 @@ __pycache__/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
+
 # Local data and temporary test files
 data/
 test_bird.png
@@ -14,11 +15,12 @@ test_bird.png
 # Model checkpoints
 *.pth
 *.pt
+outputs/**/*.pth
 
 # Environment and secrets
 .env
 
-# MLflow local tracking
+# MLflow tracking data
 mlruns/
 mlflow.db
 
