@@ -208,11 +208,11 @@ def run_tuning(
 
     output_dir = Path(output_dir)
 
-    # Set up the MLflow experiment for hyperparameter tuning
+    # Initialize MLflow tuning experiment
     setup_mlflow(
         experiment_name="bird_classification_tuning"
     )
-
+    
     print("=" * 50)
     print("HYPERPARAMETER TUNING")
     print("=" * 50)

@@ -1,10 +1,12 @@
 import argparse
-from pathlib import Path
 import random
+from pathlib import Path
 
 import numpy as np
 import torch
 import torch.nn as nn
+import yaml
+
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -20,6 +22,16 @@ from src.training.tracker import (
 )
 
 
+def load_config(config_path):
+    """Load training settings from a YAML file."""
+    with open(config_path, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file) or {}
+
+    if not isinstance(config, dict):
+        raise ValueError("The YAML configuration must contain a mapping.")
+
+    return config
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -27,43 +39,30 @@ def main():
     )
 
     parser.add_argument(
-        "--epochs",
-        type=int,
-        default=20,
-        help="Number of training epochs.",
-    )
-
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=32,
-        help="Training batch size.",
-    )
-
-    parser.add_argument(
-        "--learning-rate",
-        type=float,
-        default=0.001,
-        help="Optimizer learning rate.",
-    )
-
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=42,
-        help="Random seed.",
-    )
-
-    parser.add_argument(
-        "--output-dir",
+        "--config",
         type=str,
-        default="outputs/training_run",
-        help="Directory for checkpoints and logs.",
+        default="configs/training.yaml",
+        help="Path to YAML configuration.",
+    )
+    parser.add_argument("--epochs", type=int)
+    parser.add_argument("--batch-size", type=int)
+    parser.add_argument("--learning-rate", type=float)
+    parser.add_argument("--seed", type=int)
+    parser.add_argument("--output-dir", type=str)
+    parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Path to a latest training checkpoint.",
     )
 
+    # Load YAML defaults first; explicit CLI arguments override them.
+    config_args, _ = parser.parse_known_args()
+    config = load_config(config_args.config)
+
+    parser.set_defaults(**config)
     args = parser.parse_args()
 
-    # Reproducibility
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -71,7 +70,6 @@ def main():
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
 
-    # Device
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )
@@ -83,8 +81,8 @@ def main():
     print("Epochs:", args.epochs)
     print("Batch size:", args.batch_size)
     print("Learning rate:", args.learning_rate)
+    print("Resume from:", args.resume_from)
 
-    # Data
     train_loader, val_loader, class_names = (
         create_classification_loaders(
             batch_size=args.batch_size,
@@ -95,7 +93,6 @@ def main():
         )
     )
 
-    # Model
     model = ScratchCNN(
         num_classes=len(class_names)
     ).to(device)
@@ -115,45 +112,44 @@ def main():
         min_lr=0.00001,
     )
 
-    # Output paths
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     checkpoint_path = output_dir / "best_model.pth"
+    last_checkpoint_path = output_dir / "last_checkpoint.pth"
     history_path = output_dir / "training_history.csv"
-       
-    # Set up MLflow experiment tracking
-    setup_mlflow(
-        experiment_name="bird_classification"
-    )
 
-    # Start an MLflow run
-    start_run(
-        run_name="classification_training"
-    )
-    
-    # Train
-    history = fit(
-        model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        criterion=criterion,
-        optimizer=optimizer,
-        device=device,
-        epochs=args.epochs,
-        checkpoint_path=checkpoint_path,
-        scheduler=scheduler,
-    )
+    setup_mlflow(experiment_name="bird_classification")
+    start_run(run_name="classification_training")
 
-    # Save experiment history
-    save_training_history(
-        history=history,
-        output_path=history_path,
-    )
-    log_artifact(history_path)
-    end_run()
+    try:
+        history = fit(
+            model=model,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device,
+            epochs=args.epochs,
+            checkpoint_path=checkpoint_path,
+            last_checkpoint_path=last_checkpoint_path,
+            scheduler=scheduler,
+            resume_from=args.resume_from,
+        )
+
+        save_training_history(
+            history=history,
+            output_path=history_path,
+        )
+
+        log_artifact(history_path)
+
+    finally:
+        end_run()
+
     print("\nTraining completed!")
     print("Best checkpoint:", checkpoint_path)
+    print("Latest checkpoint:", last_checkpoint_path)
     print("Training history:", history_path)
 
 
