@@ -26,3 +26,8 @@ mlflow.db
 
 # Test and tooling caches
 .pytest_cache/
+.ipynb_checkpoints/# MLflow tracking data
+mlflow.db
+mlruns/
+# Generated model checkpoints
+outputs/**/*.pth

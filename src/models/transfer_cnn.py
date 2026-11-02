@@ -241,10 +241,11 @@ def save_model_config(path, model, class_names, extra=None):
         json.dump(config, file, indent=2)
 
 
-def load_transfer_model(run_dir, device="cpu"):
+def load_transfer_model(run_dir, device="cpu", checkpoint_path=None):
     """Rebuild a trained TransferCNN from a training output directory.
 
-    Expects run_dir/model_config.json and run_dir/best_model.pth.
+    Expects run_dir/model_config.json and run_dir/best_model.pth, unless an
+    explicit checkpoint_path is supplied. Never downloads pretrained weights.
 
     Returns:
         (model in eval mode, config dict)
@@ -263,8 +264,9 @@ def load_transfer_model(run_dir, device="cpu"):
     )
 
     checkpoint = torch.load(
-        run_dir / "best_model.pth",
+        checkpoint_path if checkpoint_path is not None else run_dir / "best_model.pth",
         map_location=device,
+        weights_only=True,
     )
     model.load_state_dict(checkpoint["model_state_dict"])
 

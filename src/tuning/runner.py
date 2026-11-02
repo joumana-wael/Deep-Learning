@@ -17,7 +17,6 @@ from src.training.tracker import (
     setup_mlflow,
     start_run,
     end_run,
-    log_parameters,
     log_metrics,
     log_artifact,
 )
@@ -35,8 +34,7 @@ def run_trial(
 ):
     """Run one hyperparameter tuning trial."""
 
-    trial_seed = seed + trial_number
-
+    trial_seed = seed
     random.seed(trial_seed)
     np.random.seed(trial_seed)
     torch.manual_seed(trial_seed)
@@ -54,21 +52,15 @@ def run_trial(
     print(f"TRIAL {trial_number}")
     print("=" * 50)
     print("Configuration:", config)
-    
-     # Start an MLflow run for this tuning trial
+
+    # Start an MLflow run for this tuning trial
     start_run(
         run_name=f"tuning_trial_{trial_number}"
     )
 
-    start_time = time.perf_counter()
+  
 
-    # Log the trial configuration
-    log_parameters({
-        **config,
-        "epochs": epochs,
-        "trial_number": trial_number,
-        "seed": trial_seed,
-    })
+    
     start_time = time.perf_counter()
 
     train_loader, val_loader, class_names = (
@@ -215,6 +207,11 @@ def run_tuning(
 
     output_dir = Path(output_dir)
 
+    # Initialize MLflow tuning experiment
+    setup_mlflow(
+        experiment_name="bird_classification_tuning"
+    )
+    
     print("=" * 50)
     print("HYPERPARAMETER TUNING")
     print("=" * 50)
