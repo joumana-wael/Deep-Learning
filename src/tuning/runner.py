@@ -34,8 +34,7 @@ def run_trial(
 ):
     """Run one hyperparameter tuning trial."""
 
-    trial_seed = seed + trial_number
-
+    trial_seed = seed
     random.seed(trial_seed)
     np.random.seed(trial_seed)
     torch.manual_seed(trial_seed)
